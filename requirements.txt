@@ -1,6 +1,5 @@
 streamlit
 pandas
 spacy==3.7.2
-blis==0.7.11
 termcolor
-de-core-news-sm==3.7.0
+https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl
