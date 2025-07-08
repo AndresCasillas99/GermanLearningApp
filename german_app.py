@@ -2160,7 +2160,7 @@ if mode == 'Word practice':
         st.write("_None yet_")
 
 elif mode == 'Sentence practice':
-    df_sentences = pd.read_csv('/home/acasillas/Personal/german-english.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
+    df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
 
     # Load German model
     nlp = spacy.load("de_core_news_sm")
@@ -2377,7 +2377,7 @@ elif mode == 'Translate words':
     else:
         st.write("_None yet_")
 elif mode == 'Translate sentences':
-    df_sentences = pd.read_csv('/home/acasillas/Personal/german-english.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
+    df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
 
     # Initialize session state for tracking
     if "ts_sentence_idx" not in st.session_state:
@@ -2545,7 +2545,7 @@ elif mode == 'Pronoun declination practice':
         st.markdown(row, unsafe_allow_html=True)
 
     # Load sentences
-    df_sentences = pd.read_csv('/home/acasillas/Personal/german-english.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
+    df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
 
     # Session state for tracking
     if "pd_sentence_idx" not in st.session_state:
@@ -2717,7 +2717,7 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
         st.markdown(row, unsafe_allow_html=True)
 
     # Load sentences
-    df_sentences = pd.read_csv('/home/acasillas/Personal/german-english.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
+    df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
 
     # Session state for tracking
     if "pr_sentence_idx" not in st.session_state:
