@@ -2578,8 +2578,8 @@ elif mode == 'Pronoun declination practice':
         f"<span style='color:{case_colors[case]}; font-size:1.5em; font-weight:bold'>{pronoun}</span>",
         unsafe_allow_html=True
         )
-        #matches = df_sentences[df_sentences['german'].str.contains(rf'\b{pronoun}\b', case=False, regex=True)]
-        matches = df_sentences[df_sentences['german'].apply(lambda s: re.search(rf'(^|\s){re.escape(pronoun)}(\s|$)', s, re.IGNORECASE))]
+        matches = df_sentences[df_sentences['german'].str.contains(rf'\b{pronoun}\b', case=False, regex=True)]
+        #matches = df_sentences[df_sentences['german'].apply(lambda s: re.search(rf'(^|\s){re.escape(pronoun)}(\s|$)', s, re.IGNORECASE))]
         if not matches.empty:
             st.session_state.pd_row = matches.sample(n=1).iloc[0]
             st.session_state.pd_pronoun = pronoun
@@ -2749,8 +2749,8 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
             f"<span style='color:{case_colors[pronoun_type]}; font-size:1.5em; font-weight:bold'>{pronoun}</span>",
             unsafe_allow_html=True
         )
-        #matches = df_sentences[df_sentences['german'].str.contains(rf'\b{pronoun}\b', case=False, regex=True)]
-        matches = df_sentences[df_sentences['german'].apply(lambda s: re.search(rf'(^|\s){re.escape(pronoun)}(\s|$)', s, re.IGNORECASE))]
+        matches = df_sentences[df_sentences['german'].str.contains(rf'\b{pronoun}\b', case=False, regex=True)]
+        #matches = df_sentences[df_sentences['german'].apply(lambda s: re.search(rf'(^|\s){re.escape(pronoun)}(\s|$)', s, re.IGNORECASE))]
         if not matches.empty:
             st.session_state.pr_row = matches.sample(n=1).iloc[0]
             st.session_state.pr_pronoun = pronoun
