@@ -2336,7 +2336,7 @@ elif mode == 'Translate words':
 
         if direction == "German → English":
             st.markdown(f"**German:**<br><span style='font-size:2em; font-weight:bold'>{german_word}</span>",unsafe_allow_html=True)
-            user_input = st.text_input("Write English translation:", key="tw_input1")
+            user_input = st.text_input("Write English translation:", key="tw_input1", on_change=lambda: None)
             if user_input:
                 if user_input.strip().lower() == english_word.lower() or english_word.lower() in user_input.strip().lower() or user_input.strip().lower() in english_word.lower():
                     st.session_state.tw_feedback = "✅ Correct!"
@@ -2347,7 +2347,7 @@ elif mode == 'Translate words':
                     st.session_state.unknown_words.add(german_word)
         else:
             st.markdown(f"**English:**<br><span style='font-size:2em; font-weight:bold'>{english_word}</span>",unsafe_allow_html=True)
-            user_input = st.text_input("Write German translation:", key="tw_input2")
+            user_input = st.text_input("Write German translation:", key="tw_input2", on_change=lambda: None)
             if user_input:
                 if user_input.strip().lower() == german_word.lower() or german_word.lower() in user_input.strip().lower() or user_input.strip().lower() in german_word.lower():
                     st.session_state.tw_feedback = "✅ Correct!"
@@ -2412,7 +2412,7 @@ elif mode == 'Translate sentences':
 
         if direction == "German → English":
             st.markdown(f"**German:**<br><span style='font-size:2em; font-weight:bold'>{german_sentence}</span>",unsafe_allow_html=True)
-            user_input = st.text_input("Write English translation:", key="ts_input")
+            user_input = st.text_input("Write English translation:", key="ts_input", on_change=lambda: None)
             if user_input:
                 if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower():
                     st.session_state.ts_feedback = "✅ Correct!"
@@ -2423,7 +2423,7 @@ elif mode == 'Translate sentences':
                     st.session_state.ts_unknown_sentences.add(german_sentence)
         else:
             st.markdown(f"**English:**<br><span style='font-size:2em; font-weight:bold'>{english_sentence}</span>",unsafe_allow_html=True)
-            user_input = st.text_input("Write German translation:", key="ts_input2")
+            user_input = st.text_input("Write German translation:", key="ts_input2", on_change=lambda: None)
             if user_input:
                 if user_input.strip().lower() == german_sentence.strip().lower() or german_sentence.strip().lower() in user_input.strip().lower():
                     st.session_state.ts_feedback = "✅ Correct!"
@@ -2612,7 +2612,7 @@ elif mode == 'Pronoun declination practice':
         )
 
 
-        user_input = st.text_input("Translate to English:", key="pd_input")
+        user_input = st.text_input("Translate to English:", key="pd_input", on_change=lambda: None)
         if user_input:
             if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower():
                 st.session_state.pd_feedback = "✅ Correct!"
@@ -2780,7 +2780,7 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
             unsafe_allow_html=True
         )
 
-        user_input = st.text_input("Translate to English:", key="pr_input")
+        user_input = st.text_input("Translate to English:", key="pr_input", on_change=lambda: None)
         if user_input:
             if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower():
                 st.session_state.pr_feedback = "✅ Correct!"
