@@ -5,6 +5,7 @@ import random
 import spacy
 from termcolor import colored
 
+#Large fonts
 st.markdown("""
     <style>
     html, body, [class*="css"]  {
@@ -22,8 +23,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
-st.markdown("""
+#Title
+title = st.markdown("""
 <span style='font-size:2.2em; font-weight:bold'>
   <span style='color:black'>German</span>
   <span style='color:red'> Language</span>
@@ -35,12 +36,92 @@ st.markdown("""<span style='font-size:1.6em; vertical-align:right; margin-left:1
     <span style='color:black'>by</span>
     <span style='color:black'> Andrés 😎</span>
     <span style='color:black'> 😎 </span>
-    😎
+    😎🇩🇪🇩🇪🇩🇪
   </span>
 </span>
 """, unsafe_allow_html=True)
 
-mode = st.radio("Choose your practice mode:", ["Word practice", "Sentence practice", "Translate words", "Translate sentences", "Pronoun declination practice", "Possessive, reflexive, relative and indefinite pronoun practice"])
+#Translation sidebar CSS
+st.markdown("""
+    <style>
+    /* Make all Streamlit text input boxes light grey */
+    .stTextInput input, .stTextArea textarea {
+        background-color: #f5f5f5 !important;
+        border-radius: 8px !important;
+        border: 1px solid #ccc !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+if st.session_state.get("start_clicked", False):
+    # Pick a random mode
+    st.session_state.random_mode = random.choice([
+        "Word practice",
+        "Sentence practice",
+        "Translate words",
+        "Translate sentences",
+        "Pronoun declination practice",
+        "Possessive, reflexive, relative and indefinite pronoun practice"
+    ])
+    st.session_state.start_clicked = False
+
+
+#Define modes
+modes = [
+    "Word practice",
+    "Sentence practice",
+    "Translate words",
+    "Translate sentences",
+    "Pronoun declination practice",
+    "Possessive, reflexive, relative and indefinite pronoun practice"
+]
+
+
+if "mode" not in st.session_state:
+    st.session_state["mode"] = modes[0]
+
+red_button = st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        background-color: #d32f2f;
+        color: white;
+        font-weight: bold;
+        font-size: 3.3em;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+if st.button("Random mode!"):
+    st.session_state["mode"] = random.choice(modes)
+
+#Sidebar menu
+mode = st.sidebar.radio("Choose your practice mode (or click the random mode button):", modes, key="mode")
+
+# ...existing code...
+
+#CSS for sidebar styling
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {
+        background: lightblue;
+        );
+        border-radius: 18px;
+        padding: 24px 16px 24px 16px;
+        margin: 8px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# ...existing code...
+
+active_mode = mode
 
 raw_data = """ 
     1. Time	Die Zeit	Die Zeiten
@@ -2044,122 +2125,108 @@ raw_data = """
     2000. Cooking	Das Kochen	(usually uncountable)
     """
 
-if mode == 'Word practice':
+german_vocab = []
+for line in raw_data.strip().splitlines():
+    line = line.strip()
+    if not line:
+        continue
+    parts = re.split(r'\s{2,}|\t', line)
+    if len(parts) == 3:
+        m = re.match(r"(\d+)\.\s*(.+)", parts[0])
+        if m:
+            number = int(m.group(1))
+            english = m.group(2).strip()
+            german_singular = parts[1].strip()
+            german_plural = parts[2].strip()
+            german_vocab.append({
+                "number": number,
+                "english": english,
+                "german_singular": german_singular,
+                "german_plural": german_plural
+            })
 
-    german_vocab = []
-    for line in raw_data.strip().splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        parts = re.split(r'\s{2,}|\t', line)
-        if len(parts) == 3:
-            m = re.match(r"(\d+)\.\s*(.+)", parts[0])
-            if m:
-                number = int(m.group(1))
-                english = m.group(2).strip()
-                german_singular = parts[1].strip()
-                german_plural = parts[2].strip()
-                german_vocab.append({
-                    "number": number,
-                    "english": english,
-                    "german_singular": german_singular,
-                    "german_plural": german_plural
-                })
+if active_mode == 'Word practice':
 
     df_voc = pd.DataFrame(german_vocab)
 
-    # Initialize session state for tracking
+    # Initialize session state for tracking and timing
     if "word_idx" not in st.session_state:
         st.session_state.word_idx = None
-    if "wp_feedback" not in st.session_state:
-        st.session_state.wp_feedback = ""
+    if "wp_show_translation" not in st.session_state:
+        st.session_state.wp_show_translation = False
     if "wp_known_words" not in st.session_state:
         st.session_state.wp_known_words = set()
     if "wp_unknown_words" not in st.session_state:
         st.session_state.wp_unknown_words = set()
-    if "wp_show_translation" not in st.session_state:
-        st.session_state.wp_show_translation = False
 
-    red_button = st.markdown("""
-    <style>
-    div.stButton > button:first-child {
-        background-color: #d32f2f;
-        color: white;
-        font-weight: bold;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    if st.button("Show me a word!"):
+    # Helper to get a new word
+    def get_new_word():
         st.session_state.word_idx = df_voc.sample(n=1).index[0]
-        st.session_state.wp_feedback = ""
         st.session_state.wp_show_translation = False
+    
+    # On first load or after auto-advance, get a new word
+    if st.session_state.word_idx is None:
+        get_new_word()
 
-    if st.session_state.word_idx is not None:
-        row = df_voc.loc[st.session_state.word_idx]
-        german_word = row['german_singular']
-        english_word = row['english']
-        plural_word = row['german_plural']
+    row = df_voc.loc[st.session_state.word_idx]
+    german_word = row['german_singular']
+    english_word = row['english']
+    plural_word = row['german_plural']
 
-        # Extract article and noun
-        parts = german_word.split(' ', 1)
-        if len(parts) == 2:
-            article, noun = parts
-        else:
-            article, noun = "", german_word
+    # Extract article and noun
+    parts = german_word.split(' ', 1)
+    if len(parts) == 2:
+        article, noun = parts
+    else:
+        article, noun = "", german_word
 
-        article_colors = {"der": "blue", "das": "green", "die": "red"}
-        color = article_colors.get(article.lower(), "black")
-        st.markdown(
-        f"<span style='color:{color}; font-size:2em; font-weight:bold'>{article}</span> "
-        f"<span style='font-size:2em'>{noun}</span>",
-        unsafe_allow_html=True)
+    article_colors = {"der": "blue", "das": "green", "die": "red"}
+    color = article_colors.get(article.lower(), "black")
+    st.markdown(
+    f"<span style='color:{color}; font-size:2em; font-weight:bold'>{article}</span> "
+    f"<span style='font-size:2em'>{noun}</span>",
+    unsafe_allow_html=True)
 
+    col1, col2 = st.columns(2)
+
+    if not st.session_state.wp_show_translation:
         if st.button("Show translation"):
             st.session_state.wp_show_translation = True
-            st.session_state.wp_feedback = ""
+            st.rerun()
+    else:
+        st.write(f"**English:** {english_word}")
+        st.write(f"**Plural:** {plural_word}")
+        if st.button("New word!"):
+            get_new_word()
+            st.rerun()
+        with col1:
+            if st.button("I knew this word", key="wp_known"):
+                st.session_state.wp_feedback = "✅ Marked as known!"
+                st.session_state.wp_known_words.add(german_word)
+                st.session_state.wp_unknown_words.discard(german_word)
+        with col2:
+            if st.button("I didn't know this word", key="wp_unknown"):
+                st.session_state.wp_feedback = "❌ Marked as unknown."
+                st.session_state.wp_unknown_words.add(german_word)
+                st.session_state.wp_known_words.discard(german_word)
 
-        if st.session_state.wp_show_translation:
-            st.write(f"**English:** {english_word}")
-            st.write(f"**Plural:** {plural_word}")
+    # Show stats and lists in sidebar
+    st.sidebar.markdown(f"**Known words this session:** {len(st.session_state.wp_known_words)}")
+    st.sidebar.markdown(f"**Unknown words this session:** {len(st.session_state.wp_unknown_words)}")
 
-            # Mark as known/unknown
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("I knew this word", key=f"wp_known_{st.session_state.word_idx}"):
-                    st.session_state.wp_feedback = "✅ Marked as known!"
-                    st.session_state.wp_known_words.add(german_word)
-                    st.session_state.wp_unknown_words.discard(german_word)
-            with col2:
-                if st.button("I didn't know this word", key=f"wp_unknown_{st.session_state.word_idx}"):
-                    st.session_state.wp_feedback = "❌ Marked as unknown."
-                    st.session_state.wp_unknown_words.add(german_word)
-                    st.session_state.wp_known_words.discard(german_word)
-
-            if st.session_state.wp_feedback:
-                st.markdown(st.session_state.wp_feedback)
-                # Automatically show a new word after pressing Enter
-                st.session_state.word_idx = df_voc.sample(n=1).index[0]
-                st.session_state.wp_feedback = ""
-                st.session_state.wp_show_translation = False
-
-    # Show stats and lists
-    st.markdown(f"**Known words this session:** {len(st.session_state.wp_known_words)}")
-    st.markdown(f"**Unknown words this session:** {len(st.session_state.wp_unknown_words)}")
-
-    st.markdown("**Known words:**")
+    st.sidebar.markdown("**Known words:**")
     if st.session_state.wp_known_words:
-        st.write(", ".join(sorted(st.session_state.wp_known_words)))
+        st.sidebar.write(", ".join(sorted(st.session_state.wp_known_words)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-    st.markdown("**Unknown words:**")
+    st.sidebar.markdown("**Unknown words:**")
     if st.session_state.wp_unknown_words:
-        st.write(", ".join(sorted(st.session_state.wp_unknown_words)))
+        st.sidebar.write(", ".join(sorted(st.session_state.wp_unknown_words)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-elif mode == 'Sentence practice':
+elif active_mode == 'Sentence practice':
     df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
 
     # Load German model
@@ -2194,7 +2261,7 @@ elif mode == 'Sentence practice':
         return html
 
     # Color legend
-    st.markdown("""
+    st.sidebar.markdown("""
     **Color legend:**  
     <span style='color:#00bcd4'>NOUN/PROPN</span> (nouns, proper nouns)  
     <span style='color:#4caf50'>VERB/AUX</span> (verbs, auxiliary verbs)  
@@ -2243,8 +2310,6 @@ elif mode == 'Sentence practice':
 
         if st.session_state.show_translation:
             st.markdown(f"**English:** {row['english']}")
-
-            # Mark as known/unknown
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("I knew this sentence", key="sp_known"):
@@ -2265,22 +2330,22 @@ elif mode == 'Sentence practice':
                 st.session_state.sp_feedback = ""
 
     # Show stats
-    st.markdown(f"**Known sentences this session:** {len(st.session_state.sp_known_sentences)}")
-    st.markdown(f"**Unknown sentences this session:** {len(st.session_state.sp_unknown_sentences)}")
+    st.sidebar.markdown(f"**Known sentences this session:** {len(st.session_state.sp_known_sentences)}")
+    st.sidebar.markdown(f"**Unknown sentences this session:** {len(st.session_state.sp_unknown_sentences)}")
 
-    st.markdown("**Known sentences:**")
+    st.sidebar.markdown("**Known sentences:**")
     if st.session_state.sp_known_sentences:
-        st.write(", ".join(sorted(st.session_state.sp_known_sentences)))
+        st.sidebar.write(", ".join(sorted(st.session_state.sp_known_sentences)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-    st.markdown("**Unknown sentences:**")
+    st.sidebar.markdown("**Unknown sentences:**")
     if st.session_state.sp_unknown_sentences:
-        st.write(", ".join(sorted(st.session_state.sp_unknown_sentences)))
+        st.sidebar.write(", ".join(sorted(st.session_state.sp_unknown_sentences)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-elif mode == 'Translate words':
+elif active_mode == 'Translate words':
     german_vocab = []
     for line in raw_data.strip().splitlines():
         line = line.strip()
@@ -2362,21 +2427,21 @@ elif mode == 'Translate words':
             
 
     # Show stats
-    st.markdown(f"**Known words this session:** {len(st.session_state.known_words)}")
-    st.markdown(f"**Unknown words this session:** {len(st.session_state.unknown_words)}")
+    st.sidebar.markdown(f"**Known words this session:** {len(st.session_state.known_words)}")
+    st.sidebar.markdown(f"**Unknown words this session:** {len(st.session_state.unknown_words)}")
 
-    st.markdown("**Known words:**")
+    st.sidebar.markdown("**Known words:**")
     if st.session_state.known_words:
-        st.write(", ".join(sorted(st.session_state.known_words)))
+        st.sidebar.write(", ".join(sorted(st.session_state.known_words)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-    st.markdown("**Unknown words:**")
+    st.sidebar.markdown("**Unknown words:**")
     if st.session_state.unknown_words:
-        st.write(", ".join(sorted(st.session_state.unknown_words)))
+        st.sidebar.write(", ".join(sorted(st.session_state.unknown_words)))
     else:
-        st.write("_None yet_")
-elif mode == 'Translate sentences':
+        st.sidebar.write("_None yet_")
+elif active_mode == 'Translate sentences':
     df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
 
     # Initialize session state for tracking
@@ -2436,22 +2501,22 @@ elif mode == 'Translate sentences':
         if st.session_state.ts_feedback:
             st.markdown(st.session_state.ts_feedback)
 
-    st.markdown(f"**Known sentences this session:** {len(st.session_state.ts_known_sentences)}")
-    st.markdown(f"**Unknown sentences this session:** {len(st.session_state.ts_unknown_sentences)}")
+    st.sidebar.markdown(f"**Known sentences this session:** {len(st.session_state.ts_known_sentences)}")
+    st.sidebar.markdown(f"**Unknown sentences this session:** {len(st.session_state.ts_unknown_sentences)}")
 
-    st.markdown("**Known sentences:**")
+    st.sidebar.markdown("**Known sentences:**")
     if st.session_state.ts_known_sentences:
-        st.write(", ".join(sorted(st.session_state.ts_known_sentences)))
+        st.sidebar.write(", ".join(sorted(st.session_state.ts_known_sentences)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-    st.markdown("**Unknown sentences:**")
+    st.sidebar.markdown("**Unknown sentences:**")
     if st.session_state.ts_unknown_sentences:
-        st.write(", ".join(sorted(st.session_state.ts_unknown_sentences)))
+        st.sidebar.write(", ".join(sorted(st.session_state.ts_unknown_sentences)))
     else:
-        st.write("_None yet_")
+        st.sidebar.write("_None yet_")
 
-elif mode == 'Pronoun declination practice':
+elif active_mode == 'Pronoun declination practice':
     german_pronouns = {
         "1st_singular": {
             "nominative": "ich",
@@ -2530,9 +2595,9 @@ elif mode == 'Pronoun declination practice':
         f"<span style='color:{case_colors['dative']};font-weight:bold'>DAT</span>   "
         f"<span style='color:{case_colors['genitive']};font-weight:bold'>GEN</span>"
     )
-    st.markdown("### German Personal Pronouns by Case")
-    st.markdown(header, unsafe_allow_html=True)
-    st.markdown("-" * 80)
+    st.sidebar.markdown("### German Personal Pronouns by Case")
+    st.sidebar.markdown(header, unsafe_allow_html=True)
+    st.sidebar.markdown("-" * 80)
 
     for pron_type, forms in german_pronouns.items():
         row = (
@@ -2542,7 +2607,7 @@ elif mode == 'Pronoun declination practice':
             f"<span style='color:{case_colors['dative']}'>{forms['dative']}</span>   "
             f"<span style='color:{case_colors['genitive']}'>{forms['genitive']}</span>"
         )
-        st.markdown(row, unsafe_allow_html=True)
+        st.sidebar.markdown(row, unsafe_allow_html=True)
 
     # Load sentences
     df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
@@ -2624,24 +2689,8 @@ elif mode == 'Pronoun declination practice':
 
         if st.session_state.pd_feedback:
             st.markdown(st.session_state.pd_feedback)
-
-    # Show stats
-    st.markdown(f"**Known pronoun sentences this session:** {len(st.session_state.pd_known_sentences)}")
-    st.markdown(f"**Unknown pronoun sentences this session:** {len(st.session_state.pd_unknown_sentences)}")
-
-    st.markdown("**Known sentences:**")
-    if st.session_state.pd_known_sentences:
-        st.write(", ".join(sorted(st.session_state.pd_known_sentences)))
-    else:
-        st.write("_None yet_")
-
-    st.markdown("**Unknown sentences:**")
-    if st.session_state.pd_unknown_sentences:
-        st.write(", ".join(sorted(st.session_state.pd_unknown_sentences)))
-    else:
-        st.write("_None yet_")
-
-elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
+    
+elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
     german_pronouns = {
         "possessive": [
             {"pronoun": "mein",  "notes": "my"},
@@ -2699,9 +2748,9 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
         f"<span style='color:{case_colors['relative']};font-weight:bold'>REL</span>{' ' * (col_width_pronoun-3)}"
         f"<span style='color:{case_colors['indefinite']};font-weight:bold'>INDEF</span>"
     )
-    st.markdown("### Types of German Pronouns")
-    st.markdown(header, unsafe_allow_html=True)
-    st.markdown("-" * (col_width_type + 4 * col_width_pronoun))
+    st.sidebar.markdown("### Types of German Pronouns")
+    st.sidebar.markdown(header, unsafe_allow_html=True)
+    st.sidebar.markdown("-" * (col_width_type + 4 * col_width_pronoun))
 
     # Find max number of pronouns in any type
     max_len = max(len(german_pronouns[t]) for t in ["possessive", "reflexive", "relative", "indefinite"])
@@ -2715,7 +2764,7 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
             else:
                 pronoun = ""
             row += f"{pronoun:<{col_width_pronoun}}"
-        st.markdown(row, unsafe_allow_html=True)
+        st.sidebar.markdown(row, unsafe_allow_html=True)
 
     # Load sentences
     df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
@@ -2741,7 +2790,7 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
     </style>
     """, unsafe_allow_html=True)
 
-    if st.button("Show me a sentence with this pronoun!"):
+    if st.button("Show me a sentence with some pronoun!"):
         pronoun_type = random.choice(pronoun_types)
         pronoun_entry = random.choice(german_pronouns[pronoun_type])
         pronoun = pronoun_entry["pronoun"]
@@ -2789,22 +2838,7 @@ elif mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
             else:
                 st.session_state.pr_feedback = f"❌ Correct answer: {english_sentence}"
                 st.session_state.pr_unknown_sentences.add(german_sentence)
-
+        
         if st.session_state.pr_feedback:
             st.markdown(st.session_state.pr_feedback)
 
-            # Show stats
-            st.markdown(f"**Known pronoun sentences this session:** {len(st.session_state.pr_known_sentences)}")
-            st.markdown(f"**Unknown pronoun sentences this session:** {len(st.session_state.pr_unknown_sentences)}")
-
-            st.markdown("**Known sentences:**")
-            if st.session_state.pr_known_sentences:
-                st.write(", ".join(sorted(st.session_state.pr_known_sentences)))
-            else:
-                st.write("_None yet_")
-
-            st.markdown("**Unknown sentences:**")
-            if st.session_state.pr_unknown_sentences:
-                st.write(", ".join(sorted(st.session_state.pr_unknown_sentences)))
-            else:
-                st.write("_None yet_")
