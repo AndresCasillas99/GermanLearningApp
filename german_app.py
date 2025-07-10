@@ -153,12 +153,26 @@ sentences_translate_sentences_done = st.session_state.get("sentences_translate_s
 sentences_pronoun_declination_done = st.session_state.get("sentences_pronoun_declination_done", False)
 sentences_possessive_reflexive_done = st.session_state.get("sentences_possessive_reflexive_done", False)
 
+total = int(round(st.session_state["number_of_words"] + st.session_state["number_of_sentences"]))
+
+done = (
+    st.session_state.get("wp_counter", 0) +
+    st.session_state.get("sp_counter", 0) +
+    st.session_state.get("tw_counter", 0) +
+    st.session_state.get("ts_counter", 0) +
+    st.session_state.get("pd_counter", 0) +
+    st.session_state.get("pr_counter", 0)
+)
+overall_progress = done / total if total else 0
+st.progress(overall_progress, text=f"Overall progress... {int(overall_progress*100)}%")
+
+
 def show_workout_summary():
     st.markdown(
         f"💪🔥 <b>Today's workout:</b><br>"
         f"• <span style='color:{'green' if st.session_state.get('words_word_practice_done', False) else 'black'}'>{number_of_words_word_practice:.0f} words to learn{' ✅' if st.session_state.get('words_word_practice_done', False) else ''}</span>,<br>"
-        f"• <span style='color:{'green' if st.session_state.get('words_translate_words_done', False) else 'black'}'>{number_of_words_translate_words:.0f} words to translate{' ✅' if st.session_state.get('words_translate_words_done', False) else ''}</span>,<br>"
         f"• <span style='color:{'green' if st.session_state.get('sentences_sentence_practice_done', False) else 'black'}'>{number_of_sentences_sentence_practice} sentences to learn{' ✅' if st.session_state.get('sentences_sentence_practice_done', False) else ''}</span>,<br>"
+        f"• <span style='color:{'green' if st.session_state.get('words_translate_words_done', False) else 'black'}'>{number_of_words_translate_words:.0f} words to translate{' ✅' if st.session_state.get('words_translate_words_done', False) else ''}</span>,<br>"
         f"• <span style='color:{'green' if st.session_state.get('sentences_translate_sentences_done', False) else 'black'}'>{number_of_sentences_translate_sentences} sentences to translate{' ✅' if st.session_state.get('sentences_translate_sentences_done', False) else ''}</span>,<br>"
         f"• <span style='color:{'green' if st.session_state.get('sentences_pronoun_declination_done', False) else 'black'}'>{number_of_sentences_pronoun_declination} sentences for pronoun declination{' ✅' if st.session_state.get('sentences_pronoun_declination_done', False) else ''}</span>,<br>"
         f"• <span style='color:{'green' if st.session_state.get('sentences_possessive_reflexive_done', False) else 'black'}'>{number_of_sentences_possessive_reflexive} sentences for possessive/reflexive/relative/indefinite pronoun practice{' ✅' if st.session_state.get('sentences_possessive_reflexive_done', False) else ''}</span>.",
@@ -2294,7 +2308,7 @@ if active_mode == 'Word practice':
         with col2:
             if st.button("I didn't know this word", key="wp_unknown"):
                 st.session_state.wp_feedback = "❌ Marked as unknown."
-                st.session_state.wp_unknown_words.add(german_word)
+                st.session_state.wp_unknown_words.add(f"{german_word} ({english_word})")
                 st.session_state.wp_known_words.discard(german_word)
 
     if st.session_state.wp_counter >= number_of_words_word_practice:
@@ -2422,7 +2436,7 @@ elif active_mode == 'Sentence practice':
             with col2:
                 if st.button("I didn't understand this sentence", key="sp_unknown"):
                     st.session_state.sp_feedback = "❌ Marked as unknown."
-                    st.session_state.sp_unknown_sentences.add(sentence)
+                    st.session_state.sp_unknown_sentences.add(f"{sentence} ({row['english']})")
                     st.session_state.sp_known_sentences.discard(sentence)
 
         if st.session_state.sp_counter >= number_of_sentences_sentence_practice:
@@ -2538,7 +2552,7 @@ elif active_mode == 'Translate words':
                     st.session_state.unknown_words.discard(german_word)
                 else:
                     st.session_state.tw_feedback = f"❌ Correct answer: {english_word}"
-                    st.session_state.unknown_words.add(german_word)
+                    st.session_state.unknown_words.add(f"{german_word} ({english_word})")
         else:
             st.markdown(f"**English:**<br><span style='font-size:2em; font-weight:bold'>{english_word}</span>",unsafe_allow_html=True)
             user_input = st.text_input("Write German translation:", key="tw_input2", on_change=lambda: None)
@@ -2549,7 +2563,7 @@ elif active_mode == 'Translate words':
                     st.session_state.unknown_words.discard(english_word)
                 else:
                     st.session_state.tw_feedback = f"❌ Correct answer: {german_word}"
-                    st.session_state.unknown_words.add(english_word)
+                    st.session_state.unknown_words.add(f"{english_word} ({german_word})")
 
         if st.session_state.tw_counter >= number_of_words_translate_words:
             st.session_state.tw_feedback = "Session complete! Move on to next challenge."
@@ -2625,7 +2639,7 @@ elif active_mode == 'Translate sentences':
                     st.session_state.ts_unknown_sentences.discard(german_sentence)
                 else:
                     st.session_state.ts_feedback = f"❌ Correct answer: {english_sentence}"
-                    st.session_state.ts_unknown_sentences.add(german_sentence)
+                    st.session_state.ts_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
         else:
             st.markdown(f"**English:**<br><span style='font-size:2em; font-weight:bold'>{english_sentence}</span>",unsafe_allow_html=True)
             user_input = st.text_input("Write German translation:", key="ts_input2", on_change=lambda: None)
@@ -2636,7 +2650,7 @@ elif active_mode == 'Translate sentences':
                     st.session_state.ts_unknown_sentences.discard(english_sentence)
                 else:
                     st.session_state.ts_feedback = f"❌ Correct answer: {german_sentence}"
-                    st.session_state.ts_unknown_sentences.add(english_sentence)
+                    st.session_state.ts_unknown_sentences.add(f"{english_sentence} ({german_sentence})")
 
         if st.session_state.ts_counter >= number_of_sentences_translate_sentences:
             st.session_state.ts_feedback = "Session complete! Move on to next challenge."
@@ -2840,7 +2854,7 @@ elif active_mode == 'Pronoun declination practice':
                 st.session_state.pd_unknown_sentences.discard(german_sentence)
             else:
                 st.session_state.pd_feedback = f"❌ Correct answer: {english_sentence}"
-                st.session_state.pd_unknown_sentences.add(german_sentence)
+                st.session_state.pd_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
         
         if st.session_state.pd_counter >= number_of_sentences_pronoun_declination:
             st.session_state.pd_feedback = "Session complete! Move on to next challenge."
@@ -3004,7 +3018,7 @@ elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun prac
                 st.session_state.pr_unknown_sentences.discard(german_sentence)
             else:
                 st.session_state.pr_feedback = f"❌ Correct answer: {english_sentence}"
-                st.session_state.pr_unknown_sentences.add(german_sentence)
+                st.session_state.pr_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
         
         if st.session_state.pr_counter >= number_of_sentences_possessive_reflexive:
             st.session_state.pr_feedback = "Session complete! Move on to next challenge."
@@ -3016,7 +3030,5 @@ elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun prac
             st.markdown(st.session_state.pr_feedback)
             if st.session_state.pr_feedback =="Session complete! Move on to next challenge.":
                 st.session_state["sentences_possessive_reflexive_done"] = True
-
-
 
 
