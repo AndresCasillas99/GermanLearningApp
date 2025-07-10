@@ -2297,15 +2297,15 @@ if active_mode == 'Word practice':
                 st.session_state.wp_unknown_words.add(german_word)
                 st.session_state.wp_known_words.discard(german_word)
 
-    if st.session_state.wp_counter >= st.session_state["number_of_words_word_practice"]:
+    if st.session_state.wp_counter >= number_of_words_word_practice:
         st.session_state.wp_feedback = "Session complete! Move on to next challenge."
-        st.session_state["words_word_practice_done"] = True
-        st.session_state.wp_counter = 1
+        st.session_state.wp_counter = number_of_words_word_practice
     else:
         st.markdown(f"**Words practiced this session:** {st.session_state.wp_counter}")
 
     if st.session_state.wp_feedback:
         st.markdown(st.session_state.wp_feedback)
+        st.session_state["words_word_practice_done"] = True
 
     
     # Show stats and lists in sidebar
@@ -2427,13 +2427,13 @@ elif active_mode == 'Sentence practice':
 
             if st.session_state.sp_counter >= number_of_sentences_sentence_practice:
                 st.session_state.sp_feedback = "Session complete! Move on to next challenge."
-                st.session_state["sentences_sentence_practice_done"] = True
-                st.session_state.sp_counter = 1
+                st.session_state.sp_counter = number_of_sentences_sentence_practice
             else:
                 st.markdown(f"**Sentences practiced this session:** {st.session_state.sp_counter}")
 
             if st.session_state.sp_feedback:
                 st.markdown(st.session_state.sp_feedback)
+                st.session_state["sentences_sentence_practice_done"] = True
                 # Automatically show a new sentence after pressing Enter
                 st.session_state.sentence_idx = df_sentences.sample(n=1).index[0]
                 st.session_state.show_translation = False
@@ -2553,13 +2553,13 @@ elif active_mode == 'Translate words':
 
         if st.session_state.tw_counter >= number_of_words_translate_words:
             st.session_state.tw_feedback = "Session complete! Move on to next challenge."
-            st.session_state["words_translate_words_done"] = True
-            st.session_state.tw_counter = 1
+            st.session_state.tw_counter = number_of_words_translate_words
         else:
             st.markdown(f"**Words practiced this session:** {st.session_state.tw_counter}")
 
         if st.session_state.tw_feedback:
             st.markdown(st.session_state.tw_feedback)
+            st.session_state["words_translate_words_done"] = True
             
 
     # Show stats
@@ -2640,13 +2640,13 @@ elif active_mode == 'Translate sentences':
 
         if st.session_state.ts_counter >= number_of_sentences_translate_sentences:
             st.session_state.ts_feedback = "Session complete! Move on to next challenge."
-            st.session_state["sentences_translate_sentences_done"] = True
-            st.session_state.ts_counter = 1
+            st.session_state.ts_counter = number_of_sentences_translate_sentences
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.ts_counter}")
 
         if st.session_state.ts_feedback:
             st.markdown(st.session_state.ts_feedback)
+            st.session_state["sentences_translate_sentences_done"] = True
 
     st.sidebar.markdown(f"**Known sentences this session:** {len(st.session_state.ts_known_sentences)}")
     st.sidebar.markdown(f"**Unknown sentences this session:** {len(st.session_state.ts_unknown_sentences)}")
@@ -2843,13 +2843,13 @@ elif active_mode == 'Pronoun declination practice':
         
         if st.session_state.pd_counter >= number_of_sentences_pronoun_declination:
             st.session_state.pd_feedback = "Session complete! Move on to next challenge."
-            st.session_state["sentences_pronoun_declination_done"] = True
-            st.session_state.pd_counter = 1
+            st.session_state.pd_counter = number_of_sentences_pronoun_declination
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.pd_counter}")
 
         if st.session_state.pd_feedback:
             st.markdown(st.session_state.pd_feedback)
+            st.session_state["sentences_pronoun_declination_done"] = True
     
 elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
     show_workout_summary()
@@ -3006,13 +3006,13 @@ elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun prac
         
         if st.session_state.pr_counter >= number_of_sentences_possessive_reflexive:
             st.session_state.pr_feedback = "Session complete! Move on to next challenge."
-            st.session_state["sentences_possessive_reflexive_done"] = True
-            st.session_state.pr_counter = 1
+            st.session_state.pr_counter = number_of_sentences_possessive_reflexive
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.pr_counter}")
 
         if st.session_state.pr_feedback:
             st.markdown(st.session_state.pr_feedback)
+            st.session_state["sentences_possessive_reflexive_done"] = True
 
 
 
