@@ -4,6 +4,77 @@ import re
 import random
 import spacy
 from termcolor import colored
+import os
+import json
+import hashlib
+import glob
+
+# Login logic
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def save_user_profile(username, password_hash, avatar, progress=None):
+    os.makedirs("users", exist_ok=True)
+    profile = {
+        "password": password_hash,
+        "avatar": avatar,
+        "progress": progress or {}
+    }
+    with open(f"users/{username}.json", "w") as f:
+        json.dump(profile, f)
+
+def load_user_profile(username):
+    try:
+        with open(f"users/{username}.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+def save_current_progress():
+    if st.session_state["user"] == "guest":
+        return  # Don't save for guest
+    profile = load_user_profile(st.session_state["user"])
+    if not profile:
+        return
+    if (
+        st.session_state.get("words_word_practice_done", False)
+        and st.session_state.get("sentences_sentence_practice_done", False)
+        and st.session_state.get("words_translate_words_done", False)
+        and st.session_state.get("sentences_translate_sentences_done", False)
+        and st.session_state.get("sentences_pronoun_declination_done", False)
+        and st.session_state.get("sentences_possessive_reflexive_done", False)
+    ):
+        # Only increment if not already incremented for this round
+        if not profile.get("last_session_complete", False):
+            profile["sessions_completed"] = profile.get("sessions_completed", 0) + 1
+            profile["last_session_complete"] = True
+    else:
+        profile["last_session_complete"] = False
+    profile["progress"] = {
+        "wp_unknown_words": list(st.session_state.get("wp_unknown_words", set())),
+        "sp_unknown_sentences": list(st.session_state.get("sp_unknown_sentences", set())),
+    }
+    with open(f"users/{st.session_state['user']}.json", "w") as f:
+        json.dump(profile, f)
+
+#Leaderboard
+def get_leaderboard():
+    leaderboard = []
+    for user_file in glob.glob("users/*.json"):
+        with open(user_file, "r") as f:
+            profile = json.load(f)
+            username = os.path.splitext(os.path.basename(user_file))[0]
+            sessions = profile.get("sessions_completed", 0)
+            avatar = profile.get("avatar", "🙂")
+            leaderboard.append((sessions, username, avatar))
+    leaderboard.sort(reverse=True)  # Highest sessions first
+    return leaderboard
+
+def show_leaderboard():
+    st.markdown("## 🏆 Leaderboard 🏆")
+    for i, (sessions, username, avatar) in enumerate(get_leaderboard()[:10], 1):
+        st.markdown(f"{i}. {avatar} **{username}** — {sessions} sessions")
+
 
 #Large fonts
 st.markdown("""
@@ -41,7 +112,6 @@ st.markdown("""<span style='font-size:1.6em; vertical-align:right; margin-left:1
 </span>
 """, unsafe_allow_html=True)
 
-
 #Translation sidebar CSS
 st.markdown("""
     <style>
@@ -53,6 +123,86 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+#Hide "Press enter to apply" instructions on sidebar
+st.markdown("""
+    <style>
+    div[data-testid="InputInstructions"] > span:nth-child(1) {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
+
+#Get username and password
+if "user" not in st.session_state:
+
+    tab1, tab2, tab3 = st.tabs(["Login", "Sign Up", "Continue as Guest"])
+
+    with tab1:
+        login_username = st.text_input("Username", key="login_username")
+        login_password = st.text_input("Password", type="password", key="login_password")
+        if st.button("Login"):
+            profile = load_user_profile(login_username)
+            if profile and profile["password"] == hash_password(login_password):
+                st.session_state["user"] = login_username
+                st.session_state["avatar"] = profile.get("avatar", "🙂")
+                progress = profile.get("progress", {})
+                st.session_state["wp_known_words"] = set(progress.get("wp_known_words", []))
+                st.session_state["wp_unknown_words"] = set(progress.get("wp_unknown_words", []))
+                st.session_state["sp_known_sentences"] = set(progress.get("sp_known_sentences", []))
+                st.session_state["sp_unknown_sentences"] = set(progress.get("sp_unknown_sentences", []))
+                st.success(f"Welcome back, {login_username} {st.session_state['avatar']}!")
+                st.rerun()
+            else:
+                st.error("Invalid username or password.")
+
+    with tab2:
+        signup_username = st.text_input("Choose a username", key="signup_username")
+        signup_password = st.text_input("Choose a password", type="password", key="signup_password")
+        avatar_options = [
+            "🙂", "😎", "👩‍🎓", "👨‍🎓", "🐻", "🐱", "🐶", "🦊", "🐼", "🐵", "🦁", "🐯", "🐸", "🐧", "🐦", "🦄", "🐲", "🐙", "🦉", "🦋",
+            "👽", "🤖", "👾", "🧙‍♂️", "🧙‍♀️", "🧛‍♂️", "🧛‍♀️", "🧟‍♂️", "🧟‍♀️", "🧞‍♂️", "🧞‍♀️", "🧜‍♂️", "🧜‍♀️", "🧚‍♂️", "🧚‍♀️",
+            "👨‍🚀", "👩‍🚀", "👨‍🍳", "👩‍🍳", "👨‍🏫", "👩‍🏫", "👨‍🔬", "👩‍🔬", "👨‍🎨", "👩‍🎨", "👨‍🚒", "👩‍🚒", "👨‍✈️", "👩‍✈️",
+            "🦸‍♂️", "🦸‍♀️", "🦹‍♂️", "🦹‍♀️", "🧑‍🚀", "🧑‍🎤", "🧑‍🎨", "🧑‍🔬", "🧑‍🍳", "🧑‍🏫", "🧑‍🚒", "🧑‍✈️", "🧑‍🌾", "🧑‍🔧"
+        ]
+        st.markdown("""
+        <style>
+        .big-avatar-radio .stRadio [role="radiogroup"] > div {
+            flex-wrap: wrap;
+            gap: 0.5em;
+        }
+        .big-avatar-radio .stRadio label {
+            font-size: 2.5em !important;
+            padding: 0.2em 0.5em;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown('<div class="big-avatar-radio">', unsafe_allow_html=True)
+            avatar = st.radio("Choose an avatar", avatar_options, horizontal=True, key="signup_avatar")
+            st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("Sign Up"):
+            if not signup_username or not signup_password:
+                st.warning("Please enter a username and password.")
+            elif load_user_profile(signup_username):
+                st.error("Username already exists.")
+            else:
+                save_user_profile(signup_username, hash_password(signup_password), avatar)
+                st.session_state["user"] = signup_username
+                st.session_state["avatar"] = avatar
+                st.success(f"Account created! Welcome, {signup_username} {avatar}!")
+                st.rerun()
+
+    with tab3:
+        if st.button("Continue as guest"):
+            st.session_state["user"] = "guest"
+            st.session_state["avatar"] = "🙂"
+            st.rerun()
+
+    if st.button("Show Leaderboard"):
+        show_leaderboard()
+    
+    st.stop()
+
 
 
 if st.session_state.get("start_clicked", False):
@@ -213,7 +363,7 @@ if words_word_practice_done and sentences_sentence_practice_done and words_trans
         .union(st.session_state.get('pr_unknown_sentences', set()))
     )
     st.write(", ".join(sorted(all_unknown_sentences)) if all_unknown_sentences else "_None_")
-
+    show_leaderboard()
     st.stop()  
 
 
@@ -2239,6 +2389,10 @@ for line in raw_data.strip().splitlines():
                 "german_plural": german_plural
             })
 
+col_main, col_leader = st.columns([3, 1])
+with col_leader:
+    if st.button("Show Leaderboard 🏆"):
+        show_leaderboard()
 
 if active_mode == 'Word practice':
     show_workout_summary()
@@ -2311,16 +2465,18 @@ if active_mode == 'Word practice':
                 st.session_state.wp_unknown_words.add(f"{german_word} ({english_word})")
                 st.session_state.wp_known_words.discard(german_word)
 
-    if st.session_state.wp_counter >= number_of_words_word_practice:
+    if st.session_state.wp_counter > number_of_words_word_practice:
         st.session_state.wp_feedback = "Session complete! Move on to next challenge."
-        st.session_state.wp_counter = number_of_words_word_practice
     else:
         st.markdown(f"**Words practiced this session:** {st.session_state.wp_counter}")
 
     if st.session_state.wp_feedback:
-        st.markdown(st.session_state.wp_feedback)
         if st.session_state.wp_feedback == "Session complete! Move on to next challenge.":
+            st.markdown("<span style='color:green; font-weight:bold; font-size:1.2em'>😈 Session complete! Move on to next challenge.</span>", unsafe_allow_html=True)
             st.session_state["words_word_practice_done"] = True
+            save_current_progress()
+        else:
+            st.markdown(st.session_state.wp_feedback)
     
     # Show stats and lists in sidebar
     st.sidebar.markdown(f"**Known words this session:** {len(st.session_state.wp_known_words)}")
@@ -2337,7 +2493,7 @@ if active_mode == 'Word practice':
         st.sidebar.write(", ".join(sorted(st.session_state.wp_unknown_words)))
     else:
         st.sidebar.write("_None yet_")
-
+    
 elif active_mode == 'Sentence practice':
     show_workout_summary()
     df_sentences = pd.read_csv('german-english-sample.tsv', sep='\t', header=None, usecols=[1, 3], names=['german', 'english'])
@@ -2439,19 +2595,21 @@ elif active_mode == 'Sentence practice':
                     st.session_state.sp_unknown_sentences.add(f"{sentence} ({row['english']})")
                     st.session_state.sp_known_sentences.discard(sentence)
 
-        if st.session_state.sp_counter >= number_of_sentences_sentence_practice:
+        if st.session_state.sp_counter > number_of_sentences_sentence_practice:
             st.session_state.sp_feedback = "Session complete! Move on to next challenge."
-            st.session_state.sp_counter = number_of_sentences_sentence_practice
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.sp_counter}")
 
         if st.session_state.sp_feedback:
-            st.markdown(st.session_state.sp_feedback)
-            # Automatically show a new sentence after pressing Enter
-            st.session_state.sentence_idx = df_sentences.sample(n=1).index[0]
-            st.session_state.show_translation = False
             if st.session_state.sp_feedback == "Session complete! Move on to next challenge.":
+                st.markdown("<span style='color:green; font-weight:bold; font-size:1.2em'>😈 Session complete! Move on to next challenge.</span>", unsafe_allow_html=True)
                 st.session_state["sentences_sentence_practice_done"] = True
+                save_current_progress()
+            else:
+                st.markdown(st.session_state.sp_feedback)
+                st.session_state.sentence_idx = df_sentences.sample(n=1).index[0]
+                st.session_state.show_translation = False
+            
 
     # Show stats
     st.sidebar.markdown(f"**Known sentences this session:** {len(st.session_state.sp_known_sentences)}")
@@ -2553,6 +2711,9 @@ elif active_mode == 'Translate words':
                 else:
                     st.session_state.tw_feedback = f"❌ Correct answer: {english_word}"
                     st.session_state.unknown_words.add(f"{german_word} ({english_word})")
+            if st.button("😢 I don't know 😢"):
+                st.session_state.tw_feedback = f"Correct answer: {english_word}"
+                st.session_state.unknown_words.add(f"{german_word} ({english_word})")
         else:
             st.markdown(f"**English:**<br><span style='font-size:2em; font-weight:bold'>{english_word}</span>",unsafe_allow_html=True)
             user_input = st.text_input("Write German translation:", key="tw_input2", on_change=lambda: None)
@@ -2564,17 +2725,22 @@ elif active_mode == 'Translate words':
                 else:
                     st.session_state.tw_feedback = f"❌ Correct answer: {german_word}"
                     st.session_state.unknown_words.add(f"{english_word} ({german_word})")
+            if st.button("😢 I don't know 😢"):
+                st.session_state.tw_feedback = f"Correct answer: {german_word}"
+                st.session_state.unknown_words.add(f"{english_word} ({german_word})")
 
-        if st.session_state.tw_counter >= number_of_words_translate_words:
+        if st.session_state.tw_counter > number_of_words_translate_words:
             st.session_state.tw_feedback = "Session complete! Move on to next challenge."
-            st.session_state.tw_counter = number_of_words_translate_words
         else:
             st.markdown(f"**Words practiced this session:** {st.session_state.tw_counter}")
 
         if st.session_state.tw_feedback:
-            st.markdown(st.session_state.tw_feedback)
             if st.session_state.tw_feedback == "Session complete! Move on to next challenge.":
                 st.session_state["words_translate_words_done"] = True
+                st.markdown("<span style='color:green; font-weight:bold; font-size:1.2em'>😈 Session complete! Move on to next challenge.</span>", unsafe_allow_html=True)            
+                save_current_progress()            
+            else:
+                st.markdown(st.session_state.tw_feedback)
             
     # Show stats
     st.sidebar.markdown(f"**Known words this session:** {len(st.session_state.known_words)}")
@@ -2633,36 +2799,44 @@ elif active_mode == 'Translate sentences':
             st.markdown(f"**German:**<br><span style='font-size:2em; font-weight:bold'>{german_sentence}</span>",unsafe_allow_html=True)
             user_input = st.text_input("Write English translation:", key="ts_input", on_change=lambda: None)
             if user_input:
-                if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower():
+                if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower() or user_input.strip().lower() in english_sentence.strip().lower():
                     st.session_state.ts_feedback = "✅ Correct!"
                     st.session_state.ts_known_sentences.add(german_sentence)
                     st.session_state.ts_unknown_sentences.discard(german_sentence)
                 else:
                     st.session_state.ts_feedback = f"❌ Correct answer: {english_sentence}"
                     st.session_state.ts_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
+            if st.button("😢 I don't know 😢"):
+                st.session_state.ts_feedback = f"Correct answer: {english_sentence}"
+                st.session_state.ts_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
         else:
             st.markdown(f"**English:**<br><span style='font-size:2em; font-weight:bold'>{english_sentence}</span>",unsafe_allow_html=True)
             user_input = st.text_input("Write German translation:", key="ts_input2", on_change=lambda: None)
             if user_input:
-                if user_input.strip().lower() == german_sentence.strip().lower() or german_sentence.strip().lower() in user_input.strip().lower():
+                if user_input.strip().lower() == german_sentence.strip().lower() or german_sentence.strip().lower() in user_input.strip().lower() or user_input.strip().lower() in german_sentence.strip().lower():
                     st.session_state.ts_feedback = "✅ Correct!"
                     st.session_state.ts_known_sentences.add(english_sentence)
                     st.session_state.ts_unknown_sentences.discard(english_sentence)
                 else:
                     st.session_state.ts_feedback = f"❌ Correct answer: {german_sentence}"
                     st.session_state.ts_unknown_sentences.add(f"{english_sentence} ({german_sentence})")
+            if st.button("😢 I don't know 😢"):
+                st.session_state.ts_feedback = f"Correct answer: {german_sentence}"
+                st.session_state.ts_unknown_sentences.add(f"{english_sentence} ({german_sentence})")
 
-        if st.session_state.ts_counter >= number_of_sentences_translate_sentences:
+        if st.session_state.ts_counter > number_of_sentences_translate_sentences:
             st.session_state.ts_feedback = "Session complete! Move on to next challenge."
-            st.session_state.ts_counter = number_of_sentences_translate_sentences
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.ts_counter}")
 
         if st.session_state.ts_feedback:
-            st.markdown(st.session_state.ts_feedback)
             if st.session_state.ts_feedback == "Session complete! Move on to next challenge.":
                 st.session_state["sentences_translate_sentences_done"] = True
-
+                st.markdown("<span style='color:green; font-weight:bold; font-size:1.2em'>😈 Session complete! Move on to next challenge.</span>", unsafe_allow_html=True)
+                save_current_progress()
+            else:
+                st.markdown(st.session_state.ts_feedback)
+            
     st.sidebar.markdown(f"**Known sentences this session:** {len(st.session_state.ts_known_sentences)}")
     st.sidebar.markdown(f"**Unknown sentences this session:** {len(st.session_state.ts_unknown_sentences)}")
 
@@ -2848,25 +3022,31 @@ elif active_mode == 'Pronoun declination practice':
 
         user_input = st.text_input("Translate to English:", key="pd_input", on_change=lambda: None)
         if user_input:
-            if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower():
+            if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower() or user_input.strip().lower() in english_sentence.strip().lower():
                 st.session_state.pd_feedback = "✅ Correct!"
                 st.session_state.pd_known_sentences.add(german_sentence)
                 st.session_state.pd_unknown_sentences.discard(german_sentence)
             else:
                 st.session_state.pd_feedback = f"❌ Correct answer: {english_sentence}"
                 st.session_state.pd_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
+        if st.button("😢 I don't know 😢"):
+            st.session_state.pd_feedback = f"Correct answer: {english_sentence}"
+            st.session_state.pd_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
+
         
-        if st.session_state.pd_counter >= number_of_sentences_pronoun_declination:
+        if st.session_state.pd_counter > number_of_sentences_pronoun_declination:
             st.session_state.pd_feedback = "Session complete! Move on to next challenge."
-            st.session_state.pd_counter = number_of_sentences_pronoun_declination
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.pd_counter}")
 
         if st.session_state.pd_feedback:
-            st.markdown(st.session_state.pd_feedback)
             if st.session_state.pd_feedback == "Session complete! Move on to next challenge.":
                 st.session_state["sentences_pronoun_declination_done"] = True
-    
+                st.markdown("<span style='color:green; font-weight:bold; font-size:1.2em'>😈 Session complete! Move on to next challenge.</span>", unsafe_allow_html=True)
+                save_current_progress()
+            else:    
+                st.markdown(st.session_state.pd_feedback)
+            
 elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun practice':
     show_workout_summary()
     german_pronouns = {
@@ -3012,23 +3192,27 @@ elif active_mode == 'Possessive, reflexive, relative and indefinite pronoun prac
 
         user_input = st.text_input("Translate to English:", key="pr_input", on_change=lambda: None)
         if user_input:
-            if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower():
+            if user_input.strip().lower() == english_sentence.strip().lower() or english_sentence.strip().lower() in user_input.strip().lower() or user_input.strip().lower() in english_sentence.strip().lower():
                 st.session_state.pr_feedback = "✅ Correct!"
                 st.session_state.pr_known_sentences.add(german_sentence)
                 st.session_state.pr_unknown_sentences.discard(german_sentence)
             else:
                 st.session_state.pr_feedback = f"❌ Correct answer: {english_sentence}"
                 st.session_state.pr_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
+        if st.button("😢 I don't know 😢"):
+            st.session_state.pr_feedback = f"Correct answer: {english_sentence}"
+            st.session_state.pr_unknown_sentences.add(f"{german_sentence} ({english_sentence})")
         
-        if st.session_state.pr_counter >= number_of_sentences_possessive_reflexive:
+        if st.session_state.pr_counter > number_of_sentences_possessive_reflexive:
             st.session_state.pr_feedback = "Session complete! Move on to next challenge."
-            st.session_state.pr_counter = number_of_sentences_possessive_reflexive
         else:
             st.markdown(f"**Sentences practiced this session:** {st.session_state.pr_counter}")
 
         if st.session_state.pr_feedback:
-            st.markdown(st.session_state.pr_feedback)
             if st.session_state.pr_feedback =="Session complete! Move on to next challenge.":
                 st.session_state["sentences_possessive_reflexive_done"] = True
-
-
+                st.markdown("<span style='color:green; font-weight:bold; font-size:1.2em'>😈 Session complete! Move on to next challenge.</span>", unsafe_allow_html=True)
+                save_current_progress()
+            else:
+                st.markdown(st.session_state.pr_feedback)
+            
