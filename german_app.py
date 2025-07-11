@@ -313,7 +313,7 @@ done = (
     st.session_state.get("pd_counter", 0) +
     st.session_state.get("pr_counter", 0)
 )
-overall_progress = done / total if total else 0
+overall_progress = min(done / total if total else 0, 1.0)
 st.progress(overall_progress, text=f"Overall progress... {int(overall_progress*100)}%")
 
 
@@ -2459,11 +2459,18 @@ if active_mode == 'Word practice':
                 st.session_state.wp_feedback = "✅ Marked as known!"
                 st.session_state.wp_known_words.add(german_word)
                 st.session_state.wp_unknown_words.discard(german_word)
+                st.session_state.wp_counter += 1
+                get_new_word()
+                st.rerun()
         with col2:
             if st.button("I didn't know this word", key="wp_unknown"):
                 st.session_state.wp_feedback = "❌ Marked as unknown."
                 st.session_state.wp_unknown_words.add(f"{german_word} ({english_word})")
                 st.session_state.wp_known_words.discard(german_word)
+                st.session_state.wp_counter += 1
+                get_new_word()
+                st.rerun()
+            
 
     if st.session_state.wp_counter > number_of_words_word_practice:
         st.session_state.wp_feedback = "Session complete! Move on to next challenge."
@@ -2589,11 +2596,19 @@ elif active_mode == 'Sentence practice':
                     st.session_state.sp_feedback = "✅ Marked as known!"
                     st.session_state.sp_known_sentences.add(sentence)
                     st.session_state.sp_unknown_sentences.discard(sentence)
+                    st.session_state.sentence_idx = df_sentences.sample(n=1).index[0]
+                    st.session_state.show_translation = False
+                    st.session_state.sp_feedback = ""
+                    st.session_state.sp_counter += 1
             with col2:
                 if st.button("I didn't understand this sentence", key="sp_unknown"):
                     st.session_state.sp_feedback = "❌ Marked as unknown."
                     st.session_state.sp_unknown_sentences.add(f"{sentence} ({row['english']})")
                     st.session_state.sp_known_sentences.discard(sentence)
+                    st.session_state.sentence_idx = df_sentences.sample(n=1).index[0]
+                    st.session_state.show_translation = False
+                    st.session_state.sp_feedback = ""
+                    st.session_state.sp_counter += 1
 
         if st.session_state.sp_counter > number_of_sentences_sentence_practice:
             st.session_state.sp_feedback = "Session complete! Move on to next challenge."
